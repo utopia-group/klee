@@ -60,7 +60,7 @@ ${KLEE_SRC}/configure --with-llvmsrc=/usr/lib/llvm-${LLVM_VERSION}/build \
             --with-stp="${BUILD_DIR}/stp/build" \
             ${KLEE_UCLIBC_CONFIGURE_OPTION} \
             CXXFLAGS="${COVERAGE_FLAGS}" \
-            && make VERBOSE=1 DISABLE_ASSERTIONS=${DISABLE_ASSERTIONS} \
+            && make DISABLE_ASSERTIONS=${DISABLE_ASSERTIONS} \
                     ENABLE_OPTIMIZED=${ENABLE_OPTIMIZED} \
                     ENABLE_SHARED=0
 

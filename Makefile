@@ -10,7 +10,7 @@
 #
 # Indicates our relative path to the top of the project's root directory.
 #
-LEVEL = . 
+LEVEL = .
 
 include $(LEVEL)/Makefile.config
 

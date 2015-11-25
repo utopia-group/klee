@@ -391,9 +391,8 @@ void SpecialFunctionHandler::handleAssume(ExecutionState &state,
   bool success __attribute__ ((unused)) = executor.solver->mustBeFalse(state, e, res);
   assert(success && "FIXME: Unhandled solver failure");
   if (res) {
-    executor.terminateStateOnError(state, 
-                                   "invalid klee_assume call (provably false)",
-                                   "user.err");
+    executor.terminateStateEarly(state, 
+                                 "invalid klee_assume call (provably false)");
   } else {
     executor.addConstraint(state, e);
   }

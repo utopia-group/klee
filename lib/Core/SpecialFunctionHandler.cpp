@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Common.h"
-
 #include "Memory.h"
 #include "SpecialFunctionHandler.h"
 #include "TimingSolver.h"
@@ -18,6 +16,7 @@
 #include "klee/Internal/Module/KInstruction.h"
 #include "klee/Internal/Module/KModule.h"
 #include "klee/Internal/Support/Debug.h"
+#include "klee/Internal/Support/ErrorHandling.h"
 
 #include "Executor.h"
 #include "MemoryManager.h"
@@ -42,6 +41,13 @@ namespace {
             cl::init(false),
             cl::desc("Prefer creation of POSIX inputs (command-line arguments, files, etc.) with human readable bytes. "
                      "Note: option is expensive when creating lots of tests (default=false)"));
+
+  cl::opt<bool>
+  SilentKleeAssume("silent-klee-assume",
+                   cl::init(false),
+                   cl::desc("Silently terminate paths with an infeasible "
+                            "condition given to klee_assume() rather than "
+                            "emitting an error (default=false)"));
 }
 
 
@@ -391,9 +397,13 @@ void SpecialFunctionHandler::handleAssume(ExecutionState &state,
   bool success __attribute__ ((unused)) = executor.solver->mustBeFalse(state, e, res);
   assert(success && "FIXME: Unhandled solver failure");
   if (res) {
-    executor.terminateStateOnError(state,
-                                   "invalid klee_assume call (provably false)",
-                                   "user.err");
+    if (SilentKleeAssume) {
+      executor.terminateState(state);
+    } else {
+      executor.terminateStateOnError(state,
+                                     "invalid klee_assume call (provably false)",
+                                     "user.err");
+    }
   } else {
     executor.addConstraint(state, e);
   }

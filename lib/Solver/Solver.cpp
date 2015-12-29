@@ -10,7 +10,6 @@
 #include "klee/Solver.h"
 #include "klee/SolverImpl.h"
 
-#include "SolverStats.h"
 #include "STPBuilder.h"
 #include "MetaSMTBuilder.h"
 
@@ -21,7 +20,9 @@
 #include "klee/util/ExprPPrinter.h"
 #include "klee/util/ExprUtil.h"
 #include "klee/Internal/Support/Timer.h"
+#include "klee/Internal/Support/ErrorHandling.h"
 #include "klee/CommandLine.h"
+#include "klee/SolverStats.h"
 
 #define vc_bvBoolExtract IAMTHESPAWNOFSATAN
 
@@ -45,6 +46,10 @@ IgnoreSolverFailures("ignore-solver-failures",
                      llvm::cl::init(false),
                      llvm::cl::desc("Ignore any solver failures (default=off)"));
 
+llvm::cl::opt<bool>
+DebugDumpSTPQueries("debug-dump-stp-queries",
+                     llvm::cl::init(false),
+                     llvm::cl::desc("Dump every STP query to stderr (default=off)"));
 
 using namespace klee;
 
@@ -812,11 +817,11 @@ STPSolverImpl::computeInitialValues(const Query &query,
 
   ExprHandle stp_e = builder->construct(query.expr);
      
-  if (0) {
+  if (DebugDumpSTPQueries) {
     char *buf;
     unsigned long len;
     vc_printQueryStateToBuffer(vc, stp_e, &buf, &len, false);
-    fprintf(stderr, "note: STP query: %.*s\n", (unsigned) len, buf);
+    klee_warning("STP query:\n%.*s\n", (unsigned) len, buf);
   }
 
   bool success;
@@ -1267,4 +1272,16 @@ template class MetaSMTSolver< DirectSolver_Context < Z3_Backend> >;
 template class MetaSMTSolver< DirectSolver_Context < STP_Backend> >;
 
 #endif /* SUPPORT_METASMT */
+///
 
+void Query::dump() const {
+  llvm::errs() << "Constraints [\n";
+  for (ConstraintManager::const_iterator i = constraints.begin();
+      i != constraints.end(); i++) {
+    (*i)->dump();
+  }
+  llvm::errs() << "]\n";
+  llvm::errs() << "Query [\n";
+  expr->dump();
+  llvm::errs() << "]\n";
+}

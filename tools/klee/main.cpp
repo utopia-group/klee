@@ -124,6 +124,10 @@ namespace {
   ExitOnError("exit-on-error",
               cl::desc("Exit if errors occur"));
 
+  cl::opt<bool>
+  ExitOnAssertionViol("exit-on-assertion-viol",
+                      cl::desc("Exit if an assertion violation occur"));
+
 
   enum LibcType {
     NoLibc, KleeLibc, UcLibc
@@ -414,6 +418,35 @@ llvm::raw_fd_ostream *KleeHandler::openTestFile(const std::string &suffix,
 void KleeHandler::processTestCase(const ExecutionState &state,
                                   const char *errorMessage,
                                   const char *errorSuffix) {
+  if (ExitOnAssertionViol && errorSuffix && !strcmp("assert.err", errorSuffix)) {
+    llvm::errs() << "EXITING ON ASSERTION VIOLATION:\n" << errorMessage << "\n";
+
+    uint64_t instructions =
+      *theStatisticManager->getStatisticByName("Instructions");
+    std::stringstream stats;
+    stats << "\n";
+    stats << "KLEE: done: total instructions = "
+          << instructions << "\n";
+    stats << "KLEE: done: completed paths = "
+          << getNumPathsExplored() << "\n";
+    stats << "KLEE: done: generated tests = "
+          << getNumTestCases() << "\n";
+
+    bool useColors = llvm::errs().is_displayed();
+    if (useColors)
+      llvm::errs().changeColor(llvm::raw_ostream::GREEN,
+                               /*bold=*/true,
+                               /*bg=*/false);
+
+    llvm::errs() << stats.str();
+
+    if (useColors)
+      llvm::errs().resetColor();
+
+    getInfoStream() << stats.str();
+    exit(1);
+  }
+
   if (errorMessage && ExitOnError) {
     llvm::errs() << "EXITING ON ERROR:\n" << errorMessage << "\n";
     exit(1);
